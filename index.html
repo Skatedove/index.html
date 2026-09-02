@@ -3,104 +3,1266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Deriv Strategy V1 Backtester v0.9</title>
+<title>Deriv Strategy V1 — Backtester v0.10</title>
+
 <style>
-body{margin:0;background:#08131b;color:#f4f7f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:22px}
-h1{font-size:34px;line-height:1.05}.sub{color:#aebdc6;line-height:1.5}
-.card{background:#13242e;border:1px solid #2b5263;border-radius:24px;padding:22px;margin:16px 0}
-.status{padding:15px;border-radius:15px;background:#0b1b24;border:1px solid #2b5263;margin:10px 0}
-.ok{border-color:#31b866}.err{border-color:#ff5c63}
-.label{color:#aebdc6;margin-top:14px}.value{font-size:25px;font-weight:700;margin-top:5px;word-break:break-word}
-button{width:100%;padding:16px;border:0;border-radius:14px;background:#29ad55;color:white;font-size:18px;font-weight:700;margin-top:12px}
-pre{white-space:pre-wrap;word-break:break-word;background:#08131b;padding:15px;border-radius:14px;min-height:80px}
-.small{font-size:13px;color:#8fa2ad}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#08131b;
+  color:#f4f7f9;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  padding:18px
+}
+h1{font-size:31px;line-height:1.08;margin:5px 0 8px}
+h2{margin-top:0}
+.sub{color:#aebdc6;line-height:1.5}
+.card{
+  background:#13242e;
+  border:1px solid #2b5263;
+  border-radius:22px;
+  padding:20px;
+  margin:15px 0
+}
+.status{
+  padding:14px;
+  border-radius:14px;
+  background:#0b1b24;
+  border:1px solid #2b5263;
+  margin:10px 0
+}
+.ok{border-color:#31b866}
+.err{border-color:#ff5c63}
+.signal{
+  font-size:30px;
+  font-weight:800;
+  text-align:center;
+  padding:20px;
+  border-radius:18px;
+  background:#0b1b24;
+  margin:12px 0
+}
+.label{color:#aebdc6;margin-top:12px}
+.value{
+  font-size:24px;
+  font-weight:700;
+  margin-top:4px;
+  word-break:break-word
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px
+}
+.stat{
+  background:#0b1b24;
+  border:1px solid #244654;
+  border-radius:15px;
+  padding:14px
+}
+.stat b{
+  display:block;
+  font-size:23px;
+  margin-top:4px
+}
+button{
+  width:100%;
+  padding:15px;
+  border:0;
+  border-radius:14px;
+  background:#29ad55;
+  color:white;
+  font-size:17px;
+  font-weight:700;
+  margin-top:10px
+}
+button.stop{background:#b53b43}
+button.secondary{background:#315565}
+select,input{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #426878;
+  background:#08131b;
+  color:white;
+  font-size:17px;
+  margin-top:7px
+}
+pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#08131b;
+  padding:14px;
+  border-radius:14px;
+  min-height:80px
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px
+}
+th,td{
+  padding:9px 5px;
+  border-bottom:1px solid #294653;
+  text-align:left
+}
+.win{color:#45d477}
+.loss{color:#ff6b72}
+.small{font-size:13px;color:#8fa2ad;line-height:1.45}
 </style>
 </head>
+
 <body>
-<h1>Deriv Strategy V1<br>Backtester v0.9</h1>
-<div class="sub">Symbol discovery + live tick diagnostic. Public market data only. No login, token, account access or trade execution.</div>
 
-<div class="card"><h2>1. Deriv connection</h2>
-<div id="connection" class="status">Connecting...</div>
-<div class="label">WebSocket</div><div id="wsStatus" class="value">Starting…</div>
-<div class="label">Symbol discovery</div><div id="symbolStatus" class="value">Waiting…</div>
-<div class="label">GBP/JPY symbol returned by Deriv</div><div id="symbol" class="value">Waiting…</div></div>
+<h1>Deriv Strategy V1<br>Backtester v0.10</h1>
 
-<div class="card"><h2>2. Live GBP/JPY ticks</h2>
-<div class="label">Latest price</div><div id="price" class="value">0</div>
-<div class="label">Live ticks received</div><div id="ticks" class="value">0</div>
-<div class="label">Last update</div><div id="updated" class="value">—</div></div>
+<div class="sub">
+GBP/JPY fixed-time market scanner and simulation engine.
+Public market data only. No login, token, account access or real trade execution.
+</div>
 
-<div class="card"><h2>3. Diagnostic log</h2>
-<pre id="log">v0.9 starting…</pre>
-<button id="restart">Restart connection</button></div>
+<!-- CONNECTION -->
+<div class="card">
+<h2>1. Deriv Connection</h2>
 
-<div class="card"><h2>4. Strategy Engine</h2>
-<div id="engine" class="status">Waiting for live ticks…</div>
-<div class="small">Simulation only. This version does not place trades.</div></div>
+<div id="connection" class="status">
+Connecting...
+</div>
+
+<div class="label">WebSocket</div>
+<div id="wsStatus" class="value">Starting...</div>
+
+<div class="label">Symbol discovery</div>
+<div id="symbolStatus" class="value">Waiting...</div>
+
+<div class="label">GBP/JPY symbol returned by Deriv</div>
+<div id="symbol" class="value">Waiting...</div>
+</div>
+
+
+<!-- MARKET -->
+<div class="card">
+<h2>2. Live GBP/JPY Market</h2>
+
+<div class="grid">
+
+<div class="stat">
+<span class="small">Latest Price</span>
+<b id="price">0</b>
+</div>
+
+<div class="stat">
+<span class="small">Live Ticks</span>
+<b id="ticks">0</b>
+</div>
+
+<div class="stat">
+<span class="small">Short Trend</span>
+<b id="trend">WAITING</b>
+</div>
+
+<div class="stat">
+<span class="small">Momentum</span>
+<b id="momentum">WAITING</b>
+</div>
+
+</div>
+
+<div class="label">Last update</div>
+<div id="updated" class="value">—</div>
+</div>
+
+
+<!-- SCANNER -->
+<div class="card">
+<h2>3. AI-Style Market Scanner</h2>
+
+<div id="signal" class="signal">
+WAITING FOR MARKET DATA
+</div>
+
+<div class="grid">
+
+<div class="stat">
+<span class="small">Scanner Decision</span>
+<b id="decision">WAITING</b>
+</div>
+
+<div class="stat">
+<span class="small">Confidence</span>
+<b id="confidence">0%</b>
+</div>
+
+</div>
+
+<div class="small" style="margin-top:12px">
+The scanner currently uses price momentum and EMA-style trend analysis.
+It is a rule-based strategy engine, not a trained machine-learning model.
+</div>
+</div>
+
+
+<!-- SETTINGS -->
+<div class="card">
+<h2>4. Fixed-Time Settings</h2>
+
+<div class="label">Expiry time</div>
+
+<select id="expiry">
+<option value="2">2 minutes</option>
+<option value="3">3 minutes</option>
+<option value="5" selected>5 minutes</option>
+<option value="10">10 minutes</option>
+<option value="15">15 minutes</option>
+</select>
+
+<div class="label">Or enter any number of minutes</div>
+<input id="customExpiry" type="number" min="1" step="1" placeholder="Example: 7">
+
+<button id="startScanner">
+START AI SCANNER
+</button>
+
+<button id="stopScanner" class="stop">
+STOP SCANNER
+</button>
+
+<button id="clearStats" class="secondary">
+CLEAR SIMULATION STATS
+</button>
+</div>
+
+
+<!-- CURRENT TRADE -->
+<div class="card">
+<h2>5. Current Simulated Trade</h2>
+
+<div id="tradeStatus" class="status">
+No simulated trade running.
+</div>
+
+<div class="grid">
+
+<div class="stat">
+<span class="small">Direction</span>
+<b id="tradeDirection">—</b>
+</div>
+
+<div class="stat">
+<span class="small">Entry Price</span>
+<b id="entryPrice">—</b>
+</div>
+
+<div class="stat">
+<span class="small">Expiry</span>
+<b id="expiryTime">—</b>
+</div>
+
+<div class="stat">
+<span class="small">Time Remaining</span>
+<b id="remaining">—</b>
+</div>
+
+</div>
+</div>
+
+
+<!-- STATS -->
+<div class="card">
+<h2>6. Backtest Statistics</h2>
+
+<div class="grid">
+
+<div class="stat">
+<span class="small">Total Trades</span>
+<b id="totalTrades">0</b>
+</div>
+
+<div class="stat">
+<span class="small">Wins</span>
+<b id="wins">0</b>
+</div>
+
+<div class="stat">
+<span class="small">Losses</span>
+<b id="losses">0</b>
+</div>
+
+<div class="stat">
+<span class="small">Win Rate</span>
+<b id="winRate">0%</b>
+</div>
+
+</div>
+</div>
+
+
+<!-- HISTORY -->
+<div class="card">
+<h2>7. Trade History</h2>
+
+<div style="overflow-x:auto">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Direction</th>
+<th>Entry</th>
+<th>Exit</th>
+<th>Result</th>
+</tr>
+</thead>
+
+<tbody id="history">
+<tr>
+<td colspan="5">No trades yet.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+<!-- LOG -->
+<div class="card">
+<h2>8. Diagnostic Log</h2>
+
+<pre id="log">v0.10 starting...</pre>
+
+<button id="restart">
+Restart connection
+</button>
+</div>
+
+
+<div class="card">
+<div class="small">
+<strong>IMPORTANT:</strong>
+This version is simulation/backtesting only.
+It does not place real trades and does not use an account token.
+Do not use simulation results as proof of profitability.
+</div>
+</div>
+
 
 <script>
 (function(){
-const $=id=>document.getElementById(id);
-let ws=null, symbol=null, count=0, endpoint=0, timer=null;
-const urls=[
-"wss://api.derivws.com/trading/v1/options/ws/public",
-"wss://ws.binaryws.com/websockets/v3"
+
+const $ = id => document.getElementById(id);
+
+let ws = null;
+let symbol = null;
+let count = 0;
+let endpoint = 0;
+let timer = null;
+
+let scannerRunning = false;
+let pendingTrade = null;
+
+let prices = [];
+
+let totalTrades = 0;
+let wins = 0;
+let losses = 0;
+
+const urls = [
+  "wss://api.derivws.com/trading/v1/options/ws/public",
+  "wss://ws.binaryws.com/websockets/v3"
 ];
 
-function log(x){$("log").textContent="["+new Date().toLocaleTimeString()+"] "+x+"\n"+$("log").textContent}
-function status(x,cls){$("connection").textContent=x;$("connection").className="status "+cls}
+
+/* =========================
+   BASIC UI
+========================= */
+
+function log(x){
+  $("log").textContent =
+    "[" + new Date().toLocaleTimeString() + "] " +
+    x + "\n" + $("log").textContent;
+}
+
+function status(x,cls){
+  $("connection").textContent = x;
+  $("connection").className = "status " + cls;
+}
+
+
+/* =========================
+   EXPIRY
+========================= */
+
+function getExpiryMinutes(){
+
+  const custom = Number($("customExpiry").value);
+
+  if(Number.isFinite(custom) && custom > 0){
+    return custom;
+  }
+
+  return Number($("expiry").value);
+}
+
+
+/* =========================
+   EMA
+========================= */
+
+function ema(values, period){
+
+  if(values.length < period){
+    return null;
+  }
+
+  const k = 2 / (period + 1);
+
+  let result = values
+    .slice(0,period)
+    .reduce((a,b)=>a+b,0) / period;
+
+  for(let i=period;i<values.length;i++){
+    result = values[i] * k + result * (1-k);
+  }
+
+  return result;
+}
+
+
+/* =========================
+   MARKET ANALYSIS
+========================= */
+
+function analyzeMarket(){
+
+  if(prices.length < 20){
+    return {
+      direction:"WAIT",
+      confidence:0,
+      trend:"WAITING",
+      momentum:"WAITING"
+    };
+  }
+
+  const e5 = ema(prices,5);
+  const e13 = ema(prices,13);
+
+  const recent = prices[prices.length-1];
+  const previous = prices[prices.length-6];
+
+  const momentum = recent - previous;
+
+  let direction = "WAIT";
+  let confidence = 0;
+
+  if(e5 > e13 && momentum > 0){
+
+    direction = "CALL";
+
+    const strength =
+      Math.min(
+        100,
+        55 +
+        Math.abs(momentum / recent) * 100000
+      );
+
+    confidence = Math.round(strength);
+
+  }else if(e5 < e13 && momentum < 0){
+
+    direction = "PUT";
+
+    const strength =
+      Math.min(
+        100,
+        55 +
+        Math.abs(momentum / recent) * 100000
+      );
+
+    confidence = Math.round(strength);
+
+  }else{
+
+    direction = "WAIT";
+    confidence = 0;
+  }
+
+  let trend = "SIDEWAYS";
+
+  if(e5 > e13){
+    trend = "UP";
+  }else if(e5 < e13){
+    trend = "DOWN";
+  }
+
+  let momentumText = "NEUTRAL";
+
+  if(momentum > 0){
+    momentumText = "POSITIVE";
+  }else if(momentum < 0){
+    momentumText = "NEGATIVE";
+  }
+
+  return {
+    direction,
+    confidence,
+    trend,
+    momentum:momentumText
+  };
+}
+
+
+/* =========================
+   UPDATE SCANNER
+========================= */
+
+function updateScanner(){
+
+  const result = analyzeMarket();
+
+  $("trend").textContent = result.trend;
+  $("momentum").textContent = result.momentum;
+  $("decision").textContent = result.direction;
+  $("confidence").textContent = result.confidence + "%";
+
+  if(result.direction === "CALL"){
+
+    $("signal").textContent =
+      "CALL ↑";
+
+  }else if(result.direction === "PUT"){
+
+    $("signal").textContent =
+      "PUT ↓";
+
+  }else{
+
+    $("signal").textContent =
+      "WAIT — NO STRONG SIGNAL";
+  }
+
+
+  /*
+   Only create a new simulated trade when:
+   - scanner is running
+   - no trade is already active
+   - there is a clear CALL/PUT signal
+   - confidence is at least 60%
+  */
+
+  if(
+    scannerRunning &&
+    !pendingTrade &&
+    (result.direction === "CALL" ||
+     result.direction === "PUT") &&
+    result.confidence >= 60
+  ){
+
+    createTrade(result.direction);
+
+  }
+
+}
+
+
+/* =========================
+   CREATE SIMULATED TRADE
+========================= */
+
+function createTrade(direction){
+
+  if(!prices.length){
+    return;
+  }
+
+  const entryPrice =
+    prices[prices.length-1];
+
+  const expiryMinutes =
+    getExpiryMinutes();
+
+  const expiryAt =
+    Date.now() +
+    expiryMinutes * 60 * 1000;
+
+  pendingTrade = {
+    direction:direction,
+    entryPrice:entryPrice,
+    expiryAt:expiryAt
+  };
+
+  $("tradeDirection").textContent =
+    direction;
+
+  $("entryPrice").textContent =
+    entryPrice;
+
+  $("expiryTime").textContent =
+    new Date(expiryAt).toLocaleTimeString();
+
+  $("tradeStatus").textContent =
+    "SIMULATED " +
+    direction +
+    " TRADE OPEN — " +
+    expiryMinutes +
+    " MINUTE EXPIRY";
+
+  log(
+    "Simulation opened: " +
+    direction +
+    " @ " +
+    entryPrice +
+    " | expiry " +
+    expiryMinutes +
+    " min"
+  );
+
+}
+
+
+/* =========================
+   CHECK TRADE EXPIRY
+========================= */
+
+function checkTrade(){
+
+  if(!pendingTrade){
+    return;
+  }
+
+  const now = Date.now();
+
+  const remainingMs =
+    pendingTrade.expiryAt - now;
+
+  if(remainingMs > 0){
+
+    const seconds =
+      Math.ceil(remainingMs / 1000);
+
+    const mins =
+      Math.floor(seconds / 60);
+
+    const secs =
+      seconds % 60;
+
+    $("remaining").textContent =
+      mins + "m " +
+      String(secs).padStart(2,"0") +
+      "s";
+
+    return;
+  }
+
+  settleTrade();
+}
+
+
+/* =========================
+   SETTLE TRADE
+========================= */
+
+function settleTrade(){
+
+  if(!pendingTrade || !prices.length){
+    return;
+  }
+
+  const exitPrice =
+    prices[prices.length-1];
+
+  let win = false;
+
+  if(pendingTrade.direction === "CALL"){
+
+    win =
+      exitPrice > pendingTrade.entryPrice;
+
+  }else if(pendingTrade.direction === "PUT"){
+
+    win =
+      exitPrice < pendingTrade.entryPrice;
+  }
+
+  totalTrades++;
+
+  if(win){
+    wins++;
+  }else{
+    losses++;
+  }
+
+  updateStats();
+
+  addHistory(
+    pendingTrade.direction,
+    pendingTrade.entryPrice,
+    exitPrice,
+    win
+  );
+
+  $("tradeStatus").textContent =
+    win
+      ? "TRADE RESULT: WIN"
+      : "TRADE RESULT: LOSS";
+
+  $("tradeStatus").className =
+    "status " + (win ? "ok" : "err");
+
+  log(
+    "Trade closed: " +
+    pendingTrade.direction +
+    " | Entry " +
+    pendingTrade.entryPrice +
+    " | Exit " +
+    exitPrice +
+    " | " +
+    (win ? "WIN" : "LOSS")
+  );
+
+  pendingTrade = null;
+
+  $("tradeDirection").textContent = "—";
+  $("entryPrice").textContent = "—";
+  $("expiryTime").textContent = "—";
+  $("remaining").textContent = "—";
+}
+
+
+/* =========================
+   STATISTICS
+========================= */
+
+function updateStats(){
+
+  $("totalTrades").textContent =
+    totalTrades;
+
+  $("wins").textContent =
+    wins;
+
+  $("losses").textContent =
+    losses;
+
+  const rate =
+    totalTrades
+      ? Math.round((wins / totalTrades) * 100)
+      : 0;
+
+  $("winRate").textContent =
+    rate + "%";
+}
+
+
+/* =========================
+   HISTORY
+========================= */
+
+function addHistory(direction,entry,exit,win){
+
+  const table =
+    $("history");
+
+  if(
+    table.children.length === 1 &&
+    table.children[0].children.length === 1
+  ){
+    table.innerHTML = "";
+  }
+
+  const row =
+    document.createElement("tr");
+
+  row.innerHTML =
+    "<td>" + totalTrades + "</td>" +
+    "<td>" + direction + "</td>" +
+    "<td>" + entry + "</td>" +
+    "<td>" + exit + "</td>" +
+    "<td class='" +
+    (win ? "win" : "loss") +
+    "'>" +
+    (win ? "WIN" : "LOSS") +
+    "</td>";
+
+  table.insertBefore(
+    row,
+    table.firstChild
+  );
+}
+
+
+/* =========================
+   RESET
+========================= */
+
+function clearStats(){
+
+  totalTrades = 0;
+  wins = 0;
+  losses = 0;
+
+  pendingTrade = null;
+
+  updateStats();
+
+  $("history").innerHTML =
+    "<tr><td colspan='5'>No trades yet.</td></tr>";
+
+  $("tradeStatus").textContent =
+    "No simulated trade running.";
+
+  $("tradeStatus").className =
+    "status";
+
+  $("tradeDirection").textContent = "—";
+  $("entryPrice").textContent = "—";
+  $("expiryTime").textContent = "—";
+  $("remaining").textContent = "—";
+
+  log("Simulation statistics cleared.");
+}
+
+
+/* =========================
+   START SCANNER
+========================= */
+
+function startScanner(){
+
+  if(!symbol){
+
+    alert(
+      "GBP/JPY market data is not connected yet."
+    );
+
+    return;
+  }
+
+  scannerRunning = true;
+
+  $("startScanner").textContent =
+    "AI SCANNER RUNNING";
+
+  $("signal").textContent =
+    "SCANNING GBP/JPY...";
+
+  log(
+    "AI-style scanner started. " +
+    getExpiryMinutes() +
+    " minute expiry."
+  );
+}
+
+
+/* =========================
+   STOP SCANNER
+========================= */
+
+function stopScanner(){
+
+  scannerRunning = false;
+
+  $("startScanner").textContent =
+    "START AI SCANNER";
+
+  $("signal").textContent =
+    "SCANNER STOPPED";
+
+  log("AI-style scanner stopped.");
+}
+
+
+/* =========================
+   DERIV CONNECTION
+========================= */
+
 function start(){
-clearTimeout(timer); symbol=null; count=0;
-$("price").textContent="0";$("ticks").textContent="0";$("updated").textContent="—";
-$("symbol").textContent="Waiting…";$("symbolStatus").textContent="Requesting active symbols…";
-$("engine").textContent="Waiting for live ticks…";$("wsStatus").textContent="Connecting…";
-status("Connecting to Deriv public market data…","");
-if(ws){try{ws.close()}catch(e){}}
-log("Connecting: "+urls[endpoint]);
-try{ws=new WebSocket(urls[endpoint])}catch(e){log(e.message);return}
-ws.onopen=function(){
-$("wsStatus").textContent="CONNECTED";status("WebSocket connected","ok");
-log("Connected. Requesting active symbols.");
-ws.send(JSON.stringify({active_symbols:"brief",req_id:1}));
-};
-ws.onmessage=function(ev){
-let d;try{d=JSON.parse(ev.data)}catch(e){return}
-if(d.error){
-log("Deriv error: "+(d.error.message||"Unknown error"));
-status("Deriv error: "+(d.error.message||"Unknown error"),"err");
-if(!symbol&&endpoint<urls.length-1){endpoint++;timer=setTimeout(start,700)}
-return;
+
+  clearTimeout(timer);
+
+  symbol = null;
+  count = 0;
+  prices = [];
+
+  $("price").textContent = "0";
+  $("ticks").textContent = "0";
+  $("updated").textContent = "—";
+
+  $("symbol").textContent =
+    "Waiting...";
+
+  $("symbolStatus").textContent =
+    "Requesting active symbols...";
+
+  $("wsStatus").textContent =
+    "Connecting...";
+
+  $("engine").textContent =
+    "Waiting for live ticks...";
+
+  status(
+    "Connecting to Deriv public market data...",
+    ""
+  );
+
+  if(ws){
+
+    try{
+      ws.close();
+    }catch(e){}
+  }
+
+  log(
+    "Connecting: " +
+    urls[endpoint]
+  );
+
+  try{
+
+    ws =
+      new WebSocket(
+        urls[endpoint]
+      );
+
+  }catch(e){
+
+    log(e.message);
+    return;
+  }
+
+
+  ws.onopen = function(){
+
+    $("wsStatus").textContent =
+      "CONNECTED";
+
+    status(
+      "WebSocket connected",
+      "ok"
+    );
+
+    log(
+      "Connected. Requesting active symbols."
+    );
+
+    ws.send(
+      JSON.stringify({
+        active_symbols:"brief",
+        req_id:1
+      })
+    );
+
+  };
+
+
+  ws.onmessage = function(ev){
+
+    let d;
+
+    try{
+
+      d = JSON.parse(ev.data);
+
+    }catch(e){
+
+      return;
+    }
+
+
+    /* DERIV ERROR */
+
+    if(d.error){
+
+      const message =
+        d.error.message ||
+        "Unknown error";
+
+      log(
+        "Deriv error: " +
+        message
+      );
+
+      status(
+        "Deriv error: " +
+        message,
+        "err"
+      );
+
+      if(
+        !symbol &&
+        endpoint < urls.length - 1
+      ){
+
+        endpoint++;
+
+        timer =
+          setTimeout(
+            start,
+            700
+          );
+      }
+
+      return;
+    }
+
+
+    /* ACTIVE SYMBOLS */
+
+    if(
+      d.msg_type ===
+      "active_symbols"
+    ){
+
+      const list =
+        Array.isArray(
+          d.active_symbols
+        )
+        ? d.active_symbols
+        : [];
+
+      log(
+        "Received " +
+        list.length +
+        " active symbols."
+      );
+
+
+      const hit =
+        list.find(s => {
+
+          const name =
+            (
+              s.underlying_symbol_name ||
+              s.display_name ||
+              ""
+            )
+            .toUpperCase()
+            .replace(/\s/g,"");
+
+          const code =
+            (
+              s.underlying_symbol ||
+              s.symbol ||
+              ""
+            )
+            .toUpperCase();
+
+          return (
+            name === "GBP/JPY" ||
+            name === "GBPJPY" ||
+            code === "FRXGBPJPY"
+          );
+
+        });
+
+
+      if(!hit){
+
+        $("symbolStatus").textContent =
+          "GBP/JPY not found";
+
+        status(
+          "Connected, but GBP/JPY was not returned.",
+          "err"
+        );
+
+        log(
+          "GBP/JPY was not found in active symbols."
+        );
+
+        return;
+      }
+
+
+      symbol =
+        hit.underlying_symbol ||
+        hit.symbol;
+
+
+      const display =
+        hit.underlying_symbol_name ||
+        hit.display_name ||
+        "GBP/JPY";
+
+
+      $("symbol").textContent =
+        symbol +
+        " (" +
+        display +
+        ")";
+
+
+      $("symbolStatus").textContent =
+        "FOUND";
+
+      status(
+        "Connected and GBP/JPY discovered",
+        "ok"
+      );
+
+      log(
+        "GBP/JPY found: " +
+        symbol
+      );
+
+
+      ws.send(
+        JSON.stringify({
+          ticks:symbol,
+          subscribe:1,
+          req_id:2
+        })
+      );
+
+      return;
+    }
+
+
+    /* LIVE TICK */
+
+    if(
+      d.msg_type === "tick" &&
+      d.tick
+    ){
+
+      const q =
+        Number(d.tick.quote);
+
+      if(
+        !Number.isFinite(q)
+      ){
+        return;
+      }
+
+
+      count++;
+
+      prices.push(q);
+
+      /*
+       Keep a rolling market window.
+      */
+
+      if(prices.length > 200){
+        prices.shift();
+      }
+
+
+      $("price").textContent =
+        q;
+
+      $("ticks").textContent =
+        count;
+
+      $("updated").textContent =
+        new Date(
+          Number(d.tick.epoch) * 1000
+        ).toLocaleTimeString();
+
+
+      $("engine").textContent =
+        count >= 20
+          ? "LIVE DATA READY — scanner can analyse GBP/JPY."
+          : "Receiving live ticks... " +
+            count +
+            "/20";
+
+
+      /*
+       Run scanner analysis on every
+       incoming tick.
+      */
+
+      updateScanner();
+
+      return;
+    }
+
+  };
+
+
+  ws.onerror = function(){
+
+    $("wsStatus").textContent =
+      "ERROR";
+
+    status(
+      "WebSocket error",
+      "err"
+    );
+
+    log(
+      "WebSocket error."
+    );
+
+  };
+
+
+  ws.onclose = function(){
+
+    log(
+      "WebSocket connection closed."
+    );
+
+    if(
+      !symbol &&
+      endpoint < urls.length - 1
+    ){
+
+      endpoint++;
+
+      timer =
+        setTimeout(
+          start,
+          1000
+        );
+    }
+
+  };
+
 }
-if(d.msg_type==="active_symbols"){
-const list=Array.isArray(d.active_symbols)?d.active_symbols:[];
-log("Received "+list.length+" active symbols.");
-const hit=list.find(s=>{
-const n=(s.underlying_symbol_name||s.display_name||"").toUpperCase().replace(/\s/g,"");
-return n==="GBP/JPY"||n==="GBPJPY";
-});
-if(!hit){
-$("symbolStatus").textContent="GBP/JPY not found";status("Connected, but GBP/JPY was not returned.","err");return;
-}
-symbol=hit.underlying_symbol||hit.symbol;
-$("symbol").textContent=symbol+" ("+(hit.underlying_symbol_name||hit.display_name||"GBP/JPY")+")";
-$("symbolStatus").textContent="FOUND";log("GBP/JPY found: "+symbol);status("Connected and symbol discovered","ok");
-ws.send(JSON.stringify({ticks:symbol,subscribe:1,req_id:2}));
-return;
-}
-if(d.msg_type==="tick"&&d.tick){
-const q=Number(d.tick.quote);if(!Number.isFinite(q))return;
-count++;$("price").textContent=q;$("ticks").textContent=count;
-$("updated").textContent=new Date(Number(d.tick.epoch)*1000).toLocaleTimeString();
-$("engine").textContent=count>=10?"LIVE DATA READY — strategy engine can process ticks.":"Receiving live ticks… "+count+"/10";
-}
-};
-ws.onerror=function(){$("wsStatus").textContent="ERROR";status("WebSocket error","err");log("WebSocket error.")};
-ws.onclose=function(){if(!symbol&&endpoint<urls.length-1){endpoint++;timer=setTimeout(start,1000)}};
-}
-$("restart").onclick=function(){endpoint=0;start()};
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+$("startScanner").onclick =
+  startScanner;
+
+$("stopScanner").onclick =
+  stopScanner;
+
+$("clearStats").onclick =
+  clearStats;
+
+$("restart").onclick =
+  function(){
+
+    endpoint = 0;
+
+    stopScanner();
+
+    start();
+  };
+
+
+/* =========================
+   EXPIRY CLOCK
+========================= */
+
+setInterval(
+  checkTrade,
+  500
+);
+
+
+/* =========================
+   START
+========================= */
+
 start();
+
 })();
 </script>
+
 </body>
 </html>

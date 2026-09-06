@@ -945,7 +945,23 @@ function start(){
     log(
       "Connected. Requesting active symbols."
     );
+clearTimeout(discoveryWatchdog);
 
+discoveryWatchdog = setTimeout(function(){
+
+    if(!symbol){
+
+        log(
+            "No active symbols response. Switching endpoint..."
+        );
+
+        try{
+            ws.close();
+        }catch(e){}
+
+    }
+
+},5000);
     ws.send(JSON.stringify({
   active_symbols:"brief",
   product_type:"basic",
